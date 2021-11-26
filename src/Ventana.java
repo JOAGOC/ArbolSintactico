@@ -1,3 +1,4 @@
+import javax.swing.text.TabableView;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -149,12 +150,123 @@ public class Ventana extends javax.swing.JFrame {
     }// GEN-LAST:event_mnuLexicoActionPerformed
 
     public void construirArbol() {
-        a.clear();
-        Nodo n = a.agregar(tabla.getValueAt(1, 0).toString(), null, true);
-        a.agregar(tabla.getValueAt(0, 0).toString(), n, true);
-        construirSubArbol(n, 0, tabla.getRowCount() - 2, false);
+        try {
+            a.clear();
+            if (tabla.getValueAt(0, 1).toString().equals("Identificador")
+                    && tabla.getValueAt(1, 0).toString().equals("=")
+                    && tabla.getValueAt(tabla.getRowCount() - 1, 0).toString().equals(";")) {
+                Nodo xd;
+                a.agregar(tabla.getValueAt(0, 0).toString(),
+                        xd = a.agregar(tabla.getValueAt(1, 0).toString(), null, true), true); // Agrega el identificador
+                                                                                              // y el signo de igual
+                int i;
+                if ((i = buscarOperador()) != -1)
+                    agregarNodo(xd, i, false,2,tabla.getRowCount()-2);
+                else
+                    a.agregar(tabla.getValueAt(2, 0).toString(), xd, false);
+            }
+        } catch (Exception e) {
+        }
         super.repaint();
+        // if (index + 2 < tabla.getRowCount())
+        // if (tabla.getValueAt(index + 2, 0).toString().contains("1")
+        // || tabla.getValueAt(index + 2, 0).toString().contains("2"))
+        // a.agregar(tabla.getValueAt(index - 2, 0).toString(),
+        // a.agregar(tabla.getValueAt(index, 0).toString(), null, true), true);
     }
+
+    private void agregarNodo(Nodo xd, int i, boolean dir, int izq, int der) {
+        int i2;
+        Nodo nodo;
+        xd = a.agregar(tabla.getValueAt(i, 0).toString(), xd, dir);
+        if (i - 2 >= izq) {
+            if ((i2 = detrasHayExpresión(i)) != -1) {
+                nodo = a.agregar(tabla.getValueAt(i2, 0).toString(), xd, true);
+                a.agregar(tabla.getValueAt(i2 + 1, 0).toString(), nodo, false);
+                agregarNodo(nodo, i2 - 1, true, izq, i2 - 2);
+            } else if ((i2 = detrasHayValor(i)) != -1) {
+                nodo = a.agregar(tabla.getValueAt(i2, 0).toString(), xd, true);
+                agregarNodo(nodo, i2 - 1, true, izq, i2 - 2);
+            } else {
+                agregarNodo(xd, i - 1, true, izq, i - 2);
+            }
+        } else if (i-1 >= izq){
+            a.agregar(tabla.getValueAt(i - 1, 0).toString(), xd, true);
+        }
+
+        if (i + 2 <= der) {
+            if ((i2 = delanteHayExpresion(i)) != -1) {
+                nodo = a.agregar(tabla.getValueAt(i2, 0).toString(), xd, false);
+                a.agregar(tabla.getValueAt(i2 - 1, 0).toString(), nodo, true);
+                if (i2+2 <= der && (delanteHayExpresion(i2))!=-1)
+                    agregarNodo(nodo, i2+2, false, i2+1, der);
+                else
+                    agregarNodo(nodo, i2 + 1, false, i2 + 2, der);
+            } else if ((i2 = delanteHayValor(i)) != -1) {
+                nodo = a.agregar(tabla.getValueAt(i2, 0).toString(), xd, false);
+                agregarNodo(nodo, i2 + 1, false, i2 + 2, der);
+            } else {
+                agregarNodo(xd, i + 1, false, i + 2, der);
+            }
+        } else if (i + 1 <= der) {
+            a.agregar(tabla.getValueAt(i + 1, 0).toString(), xd, false);
+        }
+    }
+
+    public int delanteHayValor(int index) {
+        int iA = index + 2;
+        String token = tabla.getValueAt(iA, 1).toString();
+        if (token.endsWith("3") || token.endsWith("4"))
+            return iA - 1;
+        return -1;
+    }
+
+    public int delanteHayExpresion(int index) {
+        int iA = index + 2;
+        String token = tabla.getValueAt(iA, 1).toString();
+        if (token.endsWith("1") || token.endsWith("2"))
+            return iA;
+        return -1;
+    }
+
+    public int detrasHayValor(int index) {
+        int iA = index - 2;
+        String token = tabla.getValueAt(iA, 1).toString();
+        if (token.endsWith("3") || token.endsWith("4"))
+            return iA + 1;
+        return -1;
+    }
+
+    public int detrasHayExpresión(int index) {
+        int iA = index - 2;
+        String token = tabla.getValueAt(iA, 1).toString();
+        if (token.endsWith("1") || token.endsWith("2"))
+            return iA;
+        return -1;
+    }
+
+    public int buscarOperador() {
+        for (int t = 1; t < 5; t += 2) {
+            for (int index = 2; index < tabla.getRowCount() - 1; index++) {
+                String v = tabla.getValueAt(index, 1).toString();
+                if (!v.contains("Operador")) {
+                    continue;
+                }
+                if ((v.endsWith("" + t) || v.endsWith("" + (t + 1)))) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    // public void construirArbol() {
+    // a.clear();
+    // Nodo n = a.agregar(tabla.getValueAt(1, 0).toString(), null, true);
+    // a.agregar(tabla.getValueAt(0, 0).toString(), n, true);
+    // construirSubArbol(n, 0, tabla.getRowCount() - 2, false);
+    // super.repaint();
+    // }
 
     private void construirSubArbol(Nodo n, int izq, int der, boolean dir) {
         if (izq > der)
@@ -166,8 +278,39 @@ public class Ventana extends javax.swing.JFrame {
                     if (!v.contains("Operador")) {// Pregunta si es un operador para continuar
                         continue;
                     }
-                    if ((v.endsWith("" + t)) || v.endsWith("" + (t + 1))) {
-                        construirSubArbol(izq, der, v, index, n, dir);
+                    if ((v.endsWith("" + t) || v.endsWith("" + (t + 1)))) {// Si el operador encontrado es de la
+                                                                           // jerarquía
+                        Nodo xd = a.agregar(tabla.getValueAt(index, 0).toString(), n, dir);// Agregamos el nodo y
+                                                                                           // obtenemos su dirección
+                        boolean hayIzq = !(index - 1 < izq), hayDer = !(index + 1 > der);
+                        if (hayIzq) {// Si hay acceso a la izquierda
+                            boolean detrasHayValor = !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 1)
+                                    && !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 2);// Valor o expresión
+                            if (detrasHayValor) {// Agrega el valor por la izquierda y agrega a la izquierda del mismo
+                                                 // el signo que corresponde
+                                Nodo xd3 = a.agregar(tabla.getValueAt(index - 1, 0).toString(), xd, true);
+                                if (!(index - 2 < izq))
+                                    construirSubArbol(a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd3, true),
+                                            izq, index - 3, true);
+                            } else {// Agrega el operador y posteriormente los datos adyacentes
+                                Nodo xd2 = a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd, true);
+                                construirSubArbol(xd2, izq, index - 3, true);
+                                construirSubArbol(xd2, index - 1, index - 1, false);
+                            }
+                        }
+                        if (hayDer) {
+                            boolean delanteHayValor = !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 1)
+                                    && !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 2);
+                            if (delanteHayValor) {
+                                Nodo xd3 = a.agregar(tabla.getValueAt(index + 1, 0).toString(), xd, false);
+                                construirSubArbol(a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd3, false),
+                                        index + 3, der, false);
+                            } else {
+                                Nodo xd2 = a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd, false);
+                                construirSubArbol(xd2, index + 1, index + 1, true);
+                                construirSubArbol(xd2, index + 3, der, false);
+                            }
+                        }
                         return;
                     }
                 }
@@ -178,8 +321,39 @@ public class Ventana extends javax.swing.JFrame {
                 if (!v.contains("Operador")) {// Pregunta si es un operador para continuar
                     continue;
                 }
-                if (!v.endsWith("0") && !v.endsWith("5")) {
-                    construirSubArbol(izq, der, v, index, n, dir);
+                if (!v.endsWith("0") && !v.endsWith("5")) {// Si el operador encontrado es de la
+                                                           // jerarquía
+                    Nodo xd = a.agregar(tabla.getValueAt(index, 0).toString(), n, dir);// Agregamos el nodo y
+                                                                                       // obtenemos su dirección
+                    boolean hayIzq = !(index - 1 < izq), hayDer = !(index + 1 > der);
+                    if (hayIzq) {// Si hay acceso a la izquierda
+                        boolean detrasHayValor = !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 1)
+                                && !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 2);// Valor o expresión
+                        if (detrasHayValor) {// Agrega el valor por la izquierda y agrega a la izquierda del mismo
+                                             // el signo que corresponde
+                            Nodo xd3 = a.agregar(tabla.getValueAt(index - 1, 0).toString(), xd, true);
+                            if (!(index - 2 < izq))
+                                construirSubArbol(a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd3, true), izq,
+                                        index - 3, true);
+                        } else {// Agrega el operador y posteriormente los datos adyacentes
+                            Nodo xd2 = a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd, true);
+                            construirSubArbol(xd2, izq, index - 3, true);
+                            construirSubArbol(xd2, index - 1, index - 1, false);
+                        }
+                    }
+                    if (hayDer) {
+                        boolean delanteHayValor = !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 1)
+                                && !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 2);
+                        if (delanteHayValor) {
+                            Nodo xd3 = a.agregar(tabla.getValueAt(index + 1, 0).toString(), xd, false);
+                            construirSubArbol(a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd3, false),
+                                    index + 3, der, false);
+                        } else {
+                            Nodo xd2 = a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd, false);
+                            construirSubArbol(xd2, index + 1, index + 1, true);
+                            construirSubArbol(xd2, index + 3, der, false);
+                        }
+                    }
                     return;
                 }
             }
@@ -187,64 +361,6 @@ public class Ventana extends javax.swing.JFrame {
             a.agregar(tabla.getValueAt(der, 0).toString(), n, dir);
         else
             a.agregar(tabla.getValueAt(izq, 0).toString(), n, dir);
-    }
-
-    public void construirSubArbol(int izq, int der, String v, int index, Nodo n, boolean dir) {
-        // jerarquía
-        Nodo xd = a.agregar(tabla.getValueAt(index, 0).toString(), n, dir);// Agregamos el nodo y
-        // obtenemos su dirección
-        boolean hayIzq = !(index - 1 < izq), hayDer = !(index + 1 > der);
-        if (hayIzq) {// Si hay acceso a la izquierda
-            boolean detrasHayValor = !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 1)
-                    && !tabla.getValueAt(index - 2, 1).toString().endsWith("" + 2);// Valor o expresión
-            if ((index - 2 < izq))
-                detrasHayValor = true;
-            if (detrasHayValor) {// Agrega el valor por la izquierda y agrega a la izquierda del mismo
-                // el signo que corresponde
-                Nodo xd3 = a.agregar(tabla.getValueAt(index - 1, 0).toString(), xd, true);
-                if (!(index - 2 < izq))
-                    construirSubArbol(a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd3, true), izq, index - 3,
-                            true);
-            } else {// Agrega el operador y posteriormente los datos adyacentes
-                Nodo xd2 = a.agregar(tabla.getValueAt(index - 2, 0).toString(), xd, true);
-                construirSubArbol(xd2, izq, index - 3, true);
-                construirSubArbol(xd2, index - 1, index - 1, false);
-            }
-        }
-        if (hayDer) {
-            boolean delanteHayValor = !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 1)
-                    && !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 2);
-            if (delanteHayValor) {
-                Nodo xd3 = null;
-                while (delanteHayValor) {
-                    xd3 = a.agregar(tabla.getValueAt(++index, 0).toString(), xd, false);
-                    xd3 = a.agregar(tabla.getValueAt(++index, 0).toString(), xd3, false);
-                    if (index + 2 < der){
-                        delanteHayValor = !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 1)
-                        && !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 2);
-                    }
-                }
-                construirSubArbol(xd3, ++index, der,false);
-            } else {
-                Nodo xd2 = null;
-                xd2 = xd;
-                while (tabla.getValueAt(index+2, 0).toString().endsWith("1") || tabla.getValueAt(index, 0).toString().endsWith("2")) {
-                    xd2 = a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd2, false);
-                    xd2 = a.agregar(tabla.getValueAt(index + 1, 0).toString(), xd2, false);
-
-                    xd3 = a.agregar(tabla.getValueAt(++index, 0).toString(), xd, false);
-                    xd3 = a.agregar(tabla.getValueAt(++index, 0).toString(), xd3, false);
-                    if (index + 2 < der){
-                        delanteHayValor = !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 1)
-                        && !tabla.getValueAt(index + 2, 1).toString().endsWith("" + 2);
-                    }
-                }
-                construirSubArbol(xd3, ++index, der,false);
-                Nodo xd2 = a.agregar(tabla.getValueAt(index + 2, 0).toString(), xd, false);
-                construirSubArbol(xd2, index + 1, index + 1, true);
-                construirSubArbol(xd2, index + 3, der, false);
-            }
-        }
     }
 
     public void getToken(String cad) {// TOT=PRECIO+PRECIO*0.16;
